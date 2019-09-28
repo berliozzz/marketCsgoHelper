@@ -1,0 +1,19 @@
+{
+  "name": "marketcsgohelper",
+  "version": "1.0.0",
+  "description": "market.csgo.com helper",
+  "main": "mainController.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nikolay Berlioz",
+  "license": "ISC",
+  "dependencies": {
+    "request-promise": "^4.2.4",
+    "steam-totp": "^2.1.0",
+    "steam-tradeoffer-manager": "^2.10.0",
+    "steam-user": "^4.12.2",
+    "steamcommunity": "^3.40.0",
+    "ws": "^7.1.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "steam": {
+		"accountName": "",
+		"password": "",
+		"sharedSecret": "",
+		"identitySecret": "",
+		"steamApiKey": ""
+  },
+  "market": {
+		"marketApiKey": ""
+	}
+}
