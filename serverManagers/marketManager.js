@@ -1,15 +1,14 @@
 const config = require('../config');
 
 var rp = require('request-promise').defaults({
-  baseUrl: 'https://market.csgo.com/api/',
+  baseUrl: 'https://market.csgo.com/api/v2/',
   qs: {key: config.market.marketApiKey},
   json: true 
 });
 
-
 const pingPong = () => {
   return new Promise ((resolve, reject) => {
-    rp('PingPong/direct/')
+    rp('ping')
       .then(res => {
         resolve(res);
       })
@@ -19,9 +18,9 @@ const pingPong = () => {
   });
 }
 
-const trades = () => {
+const items = () => {
   return new Promise ((resolve, reject) => {
-    rp('Trades/')
+    rp('items')
       .then(res => {
         resolve(res);
       })
@@ -31,33 +30,9 @@ const trades = () => {
   });
 }
 
-const itemRequest = (sendOrReceive, botId) => {
+const tradeRequest = () => {
   return new Promise ((resolve, reject) => {
-    rp(`ItemRequest/${sendOrReceive}/${botId}/`)
-      .then(res => {
-        resolve(res);
-      })
-      .catch(err => {
-        reject(err);
-      });
-  });
-}
-
-const getWSAuth = () => {
-  return new Promise ((resolve, reject) => {
-    rp('GetWSAuth/')
-      .then(res => {
-        resolve(res);
-      })
-      .catch(err => {
-        reject(err);
-      });
-  });
-}
-
-const setSteamAPIKey = () => {
-  return new Promise ((resolve, reject) => {
-    rp(`SetSteamAPIKey/${config.steam.steamApiKey}/`)
+    rp('trade-request-give-p2p')
       .then(res => {
         resolve(res);
       })
@@ -69,8 +44,6 @@ const setSteamAPIKey = () => {
 
 module.exports = {
   pingPong:       pingPong,
-  trades:         trades,
-  itemRequest:    itemRequest,
-  getWSAuth:      getWSAuth,
-  setSteamAPIKey: setSteamAPIKey
+  items:          items,
+  tradeRequest:   tradeRequest
 }

@@ -1,5 +1,5 @@
 module.exports = {
-  filterActiveTrades: (trade) => {
-    return trade.ui_status == 2;
+  filterActiveTrades: (item) => {
+    return item.status == 2;
   }
 }

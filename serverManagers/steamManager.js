@@ -101,9 +101,10 @@ const acceptOffer = (offer) => {
 
 //*************** SteamManager Methods *********************
 steamManager.sendItem = (parameters) => {
-  const message = parameters.request.tradeoffermessage;
-  const tradeLink = parameters.request.tradelink;
-  const items = parameters.request.items;
+  const message = parameters.tradeoffermessage;
+  const items = parameters.items;
+  const tradeLink = `https://steamcommunity.com/tradeoffer/new/?partner=${parameters.partner}&token=${parameters.token}`;
+
   let tradeOffer = manager.createOffer(tradeLink);
   tradeOffer.addMyItems(items);
   tradeOffer.setMessage(message);
