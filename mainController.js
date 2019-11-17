@@ -18,7 +18,7 @@ let itemsTimer;
 const pingPong = () => {
   marketManager.pingPong()
     .then(res => {
-      console.log(res);
+      //console.log(res);
     })
     .catch(err => {
       console.log('pingPong error: ', err);
@@ -29,12 +29,10 @@ const items = () => {
   marketManager.items()
     .then(res => {
       if (res.success) {
-        console.log(res.items);
         trades = res.items;
         if (trades.length > 0) {
           const activeTrades = trades.filter(utils.filterActiveTrades);
           if (activeTrades.length > 0) {
-            console.log(activeTrades);
             tradeRequest();
           }
         }
@@ -51,8 +49,8 @@ const tradeRequest = () => {
       if (res.success) {
         itemRequestErrCount = 0;
         // если в сете еще нет нашего объекта
-        if (!itemsToSend.has(res.secret)) {
-          itemsToSend.add(res.secret);
+        if (!itemsToSend.has(res.offer.tradeoffermessage)) {
+          itemsToSend.add(res.offer.tradeoffermessage);
           sendItem(res.offer);
         }
       } else {
@@ -93,7 +91,7 @@ const sendItem = (params) => {
         setTimeout(() => { sendItem(params) }, 5000);
       } else {
         steamErrCount = 0;
-        itemsToSend.delete(params.secret);
+        itemsToSend.delete(params.tradeoffermessage);
       }
     });
 }
@@ -110,7 +108,7 @@ const acceptConfirmation = (confirmationid, params) => {
         setTimeout(() => { acceptConfirmation(confirmationid, params) }, 5000);
       } else {
         steamErrCount = 0;
-        itemsToSend.delete(params.secret);
+        itemsToSend.delete(params.tradeoffermessage);
       }
     });
 }
@@ -120,5 +118,5 @@ pingPong();
 
 /***************** Start timers **********************/
 pingPongTimer = setInterval(() => { pingPong() }, 150 * 1000);
-itemsTimer = setInterval(() => { items() }, 60 * 1000);
+itemsTimer = setInterval(() => { items() }, 30 * 1000);
 
