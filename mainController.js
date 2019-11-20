@@ -30,11 +30,9 @@ const items = () => {
     .then(res => {
       if (res.success && res.items) {
         trades = res.items;
-        if (trades.length > 0) {
-          const activeTrades = trades.filter(utils.filterActiveTrades);
-          if (activeTrades.length > 0) {
-            tradeRequest();
-          }
+        const activeTrades = trades.filter(utils.filterActiveTrades);
+        if (activeTrades.length > 0) {
+          tradeRequest();
         }
       }
     })
