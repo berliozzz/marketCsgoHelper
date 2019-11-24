@@ -21,7 +21,7 @@ const pingPong = () => {
       //console.log(res);
     })
     .catch(err => {
-      console.log('pingPong error: ', err);
+      console.log('pingPong error: ', err.message);
     });
 }
 
@@ -34,10 +34,12 @@ const items = () => {
         if (activeTrades.length > 0) {
           tradeRequest();
         }
+      } else {
+        console.log('items response error: ' + res.error);
       }
     })
     .catch(err => {
-      console.log('items error: ', err);
+      console.log('items error: ', err.message);
     });
 }
 
@@ -64,7 +66,7 @@ const tradeRequest = () => {
       }
     })
     .catch(err => {
-      console.log('tradeRequest error: ', err);
+      console.log('tradeRequest error: ', err.message);
     });
 }
 
@@ -115,6 +117,6 @@ const acceptConfirmation = (confirmationid, params) => {
 pingPong();
 
 /***************** Start timers **********************/
-pingPongTimer = setInterval(() => { pingPong() }, 150 * 1000);
+pingPongTimer = setInterval(() => { pingPong() }, 120 * 1000);
 itemsTimer = setInterval(() => { items() }, 30 * 1000);
 

@@ -3,11 +3,12 @@ const SteamUser = require('steam-user');
 const SteamTotp = require('steam-totp');
 const SteamCommunity = require('steamcommunity');
 const TradeOfferManager = require('steam-tradeoffer-manager');
+const utils = require('../utils');
+const fs = require('fs');
 const EventEmitter = require('events');
 
 
 const user = new SteamUser();
-user.autoRelogin = false;
 const community = new SteamCommunity();
 const manager = new TradeOfferManager({
 	steam: user,
@@ -16,17 +17,9 @@ const manager = new TradeOfferManager({
 });
 class SteamManager extends EventEmitter {};
 const steamManager = new SteamManager;
+
 let acceptOfferErrCount = 0;
-
-const createLogOnOptions = () => {
-	return {
-    'accountName': config.steam.accountName,
-    'password': config.steam.password,
-    'twoFactorCode': SteamTotp.getAuthCode(config.steam.sharedSecret)
-  }
-};
-
-user.logOn(createLogOnOptions());
+let loginKey = '';
 
 //********************** Events ****************************
 user.on('loggedOn', () => console.log('Logged into Steam'));
@@ -37,17 +30,21 @@ user.on('webSession', (sessionID, cookies) => {
   console.log('webSession refreshed');
 });
 
+user.on('disconnected', (eresult, msg) => {
+  console.log(`disconnected message: ${msg}`);
+});
+
+user.on('error', err => {
+  console.log('Steam error: ' + err);
+});
+
+user.on('loginKey', key => {
+  writeFileWithLoginKey(key);
+});
+
 community.on('sessionExpired', err => {
   console.log('sessionExpired');
-  if (user.steamID == null) {
-    user.logOn(createLogOnOptions());
-  } else {
-    user.webLogOn(err => {
-      if (err) {
-          console.log('node-user webLogOn: ' + err.message);
-      }
-    });
-  }
+  user.logOn(loginDetails);
 });
 
 manager.on('newOffer', offer => {
@@ -99,6 +96,42 @@ const acceptOffer = (offer) => {
   });
 }
 
+const createLogOnOptions = () => {
+  if (utils.isEmpty(loginKey)) {
+    return {
+      accountName:      config.steam.accountName,
+      password:         config.steam.password,
+      twoFactorCode:    SteamTotp.getAuthCode(config.steam.sharedSecret),
+      rememberPassword: true
+    }
+  } else {
+    return {
+      accountName:      config.steam.accountName,
+      loginKey:         loginKey, 
+      rememberPassword: true
+    }
+  }
+};
+
+const readFileWithLoginKey = () => {
+  fs.readFile('token.json', 'utf8', (err, data) => {
+    if (err) {
+      console.log('readFile error: ' + err);
+    } else {
+      loginKey = data;
+    }
+    user.logOn(createLogOnOptions());
+  });
+}
+
+const writeFileWithLoginKey = (key) => {
+  fs.writeFile('token.json', key, 'utf8', (err) => {
+    if (!err) {
+      console.log('Successful write to token.json.');
+    }
+  });
+}
+
 //*************** SteamManager Methods *********************
 steamManager.sendItem = (parameters) => {
   const message = parameters.tradeoffermessage;
@@ -131,5 +164,7 @@ steamManager.acceptConfirmation = (tradeOfferId) => {
     });
   });
 }
+
+readFileWithLoginKey();
 
 module.exports = steamManager;
