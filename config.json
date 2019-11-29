@@ -8,5 +8,11 @@
   },
   "market": {
 		"marketApiKey": ""
+	},
+	"proxy": {
+		"domen": "",
+		"port": "",
+		"user": "",
+		"password": ""
 	}
 }

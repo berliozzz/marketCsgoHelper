@@ -3,13 +3,15 @@ const SteamUser = require('steam-user');
 const SteamTotp = require('steam-totp');
 const SteamCommunity = require('steamcommunity');
 const TradeOfferManager = require('steam-tradeoffer-manager');
+const request = require('request');
 const utils = require('../utils');
 const fs = require('fs');
 const EventEmitter = require('events');
 
+const proxyUrl = utils.getProxyUrl();
 
-const user = new SteamUser();
-const community = new SteamCommunity();
+const user = new SteamUser({httpProxy: proxyUrl});
+const community = new SteamCommunity({ request: request.defaults({ proxy: proxyUrl }) });
 const manager = new TradeOfferManager({
 	steam: user,
 	community: community,

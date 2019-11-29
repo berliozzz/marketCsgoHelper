@@ -1,9 +1,12 @@
 const config = require('../config');
+const utils = require('../utils');
+const proxyUrl = utils.getProxyUrl();
 
-var rp = require('request-promise').defaults({
+const rp = require('request-promise').defaults({
   baseUrl: 'https://market.csgo.com/api/v2/',
   qs: {key: config.market.marketApiKey},
-  json: true 
+  json: true,
+  proxy:proxyUrl
 });
 
 const pingPong = () => {

@@ -1,12 +1,12 @@
 const steamManager = require('./serverManagers/steamManager');
 const marketManager = require('./serverManagers/marketManager');
+const errorLog = require('./errorLog/errorMarketAPI');
 const utils = require('./utils');
 const config = require('./config');
 const WebSocket = require('ws');
 
 /******************** Variables *******************/
 let trades = []; 
-let itemsToSend = new Set();
 let itemRequestErrCount = 0;
 let steamErrCount = 0;
 
@@ -18,10 +18,12 @@ let itemsTimer;
 const pingPong = () => {
   marketManager.pingPong()
     .then(res => {
-      //console.log(res);
+      if (res.error) {
+        console.log(res.error);
+      }
     })
     .catch(err => {
-      console.log('pingPong error: ', err.message);
+      errorLog('pingPong', err);
     });
 }
 
@@ -39,7 +41,7 @@ const items = () => {
       }
     })
     .catch(err => {
-      console.log('items error: ', err.message);
+      errorLog('items', err);
     });
 }
 
@@ -48,11 +50,7 @@ const tradeRequest = () => {
     .then(res => {
       if (res.success) {
         itemRequestErrCount = 0;
-        // если в сете еще нет нашего объекта
-        if (!itemsToSend.has(res.offer.tradeoffermessage)) {
-          itemsToSend.add(res.offer.tradeoffermessage);
-          sendItem(res.offer);
-        }
+        sendItem(res.offer);
       } else {
         console.log('tradeRequest err:' + res.error);
         if (itemRequestErrCount != 3) {
@@ -66,7 +64,7 @@ const tradeRequest = () => {
       }
     })
     .catch(err => {
-      console.log('tradeRequest error: ', err.message);
+      errorLog('tradeRequest', err);
     });
 }
 
@@ -91,7 +89,6 @@ const sendItem = (params) => {
         setTimeout(() => { sendItem(params) }, 5000);
       } else {
         steamErrCount = 0;
-        itemsToSend.delete(params.tradeoffermessage);
       }
     });
 }
@@ -108,7 +105,6 @@ const acceptConfirmation = (confirmationid, params) => {
         setTimeout(() => { acceptConfirmation(confirmationid, params) }, 5000);
       } else {
         steamErrCount = 0;
-        itemsToSend.delete(params.tradeoffermessage);
       }
     });
 }
