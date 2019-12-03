@@ -41,12 +41,19 @@ user.on('error', err => {
 });
 
 user.on('loginKey', key => {
-  writeFileWithLoginKey(key);
+  writeFileWithLoginKey(key)
+    .then(res => console.log(res))
+    .catch(err => console.log(err));
 });
 
 community.on('sessionExpired', err => {
   console.log('sessionExpired');
-  user.logOn(loginDetails);
+  writeFileWithLoginKey('')
+    .then(res => {
+      console.log('delete token from token.json');
+      user.logOn(createLogOnOptions());
+    })
+    .catch(err => console.log(err));
 });
 
 manager.on('newOffer', offer => {
@@ -127,10 +134,14 @@ const readFileWithLoginKey = () => {
 }
 
 const writeFileWithLoginKey = (key) => {
-  fs.writeFile('token.json', key, 'utf8', (err) => {
-    if (!err) {
-      console.log('Successful write to token.json.');
-    }
+  return new Promise ((resolve, reject) => {
+    fs.writeFile('token.json', key, 'utf8', (err) => {
+      if (!err) {
+          resolve('Successful write to token.json.');
+      } else {
+          reject('writeFile token.json error: ' + err);
+      }
+    });
   });
 }
 
