@@ -48,12 +48,7 @@ user.on('loginKey', key => {
 
 community.on('sessionExpired', err => {
   console.log('sessionExpired');
-  writeFileWithLoginKey('')
-    .then(res => {
-      console.log('delete token from token.json');
-      user.logOn(createLogOnOptions());
-    })
-    .catch(err => console.log(err));
+  user.webLogOn();
 });
 
 manager.on('newOffer', offer => {
@@ -179,5 +174,6 @@ steamManager.acceptConfirmation = (tradeOfferId) => {
 }
 
 readFileWithLoginKey();
+setInterval(() => user.webLogOn(), 30 * 60 * 1000);
 
 module.exports = steamManager;
