@@ -47,8 +47,21 @@ user.on('loginKey', key => {
 });
 
 community.on('sessionExpired', err => {
-  console.log('sessionExpired');
-  user.webLogOn();
+  console.log(`SessionExpired emitted. Reason: ${err}`);
+  try {
+      console.log('steamID: ' + user.steamID);
+      if (!user.steamID) {
+          loginSteam(createLogOnOptions());
+      } else {
+          user.webLogOn(err => {
+              if (err) {
+                  console.log('node-user webLogOn error: ' + err.message);
+              }
+          });
+      }
+  } catch (error) {
+      console.log('Relogin error: ' + error);
+  }
 });
 
 manager.on('newOffer', offer => {
