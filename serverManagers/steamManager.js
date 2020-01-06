@@ -49,18 +49,22 @@ user.on('loginKey', key => {
 community.on('sessionExpired', err => {
   console.log(`SessionExpired emitted. Reason: ${err}`);
   try {
-      console.log('steamID: ' + user.steamID);
-      if (!user.steamID) {
-          loginSteam(createLogOnOptions());
-      } else {
-          user.webLogOn(err => {
-              if (err) {
-                  console.log('node-user webLogOn error: ' + err.message);
-              }
-          });
-      }
+    if (!user.steamID) {
+      writeFileWithLoginKey('')
+        .then(res => {
+          console.log('Steam token cleared.');
+          user.logOn(createLogOnOptions());
+        })
+        .catch(err => console.log(err));
+    } else {
+      user.webLogOn(err => {
+        if (err) {
+          console.log('webLogOn error: ' + err.message);
+        }
+      });
+    }
   } catch (error) {
-      console.log('Relogin error: ' + error);
+    console.log('Relogin error: ' + error);
   }
 });
 
@@ -187,6 +191,14 @@ steamManager.acceptConfirmation = (tradeOfferId) => {
 }
 
 readFileWithLoginKey();
-setInterval(() => user.webLogOn(), 30 * 60 * 1000);
+setInterval(() => {
+  if (user.steamID) {
+    user.webLogOn(err => {
+      if (err) {
+        console.log('webLogOn error: ' + err.message);
+      }
+    });
+  }
+}, 30 * 60 * 1000);
 
 module.exports = steamManager;
