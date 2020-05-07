@@ -6,18 +6,18 @@ const TradeOfferManager = require('steam-tradeoffer-manager');
 const request = require('request');
 const utils = require('../utils');
 const fs = require('fs');
-const EventEmitter = require('events');
 
 const proxyUrl = utils.getProxyUrl();
 
-const user = new SteamUser({httpProxy: proxyUrl});
+const user = new SteamUser({httpProxy: proxyUrl, autoRelogin: false});
 const community = new SteamCommunity({ request: request.defaults({ proxy: proxyUrl }) });
 const manager = new TradeOfferManager({
 	steam: user,
 	community: community,
 	language: 'en'
 });
-class SteamManager extends EventEmitter {};
+
+class SteamManager {};
 const steamManager = new SteamManager;
 
 let acceptOfferErrCount = 0;
@@ -53,7 +53,7 @@ community.on('sessionExpired', err => {
       writeFileWithLoginKey('')
         .then(res => {
           console.log('Steam token cleared.');
-          user.logOn(createLogOnOptions());
+          readFileWithLoginKey();
         })
         .catch(err => console.log(err));
     } else {
@@ -69,28 +69,26 @@ community.on('sessionExpired', err => {
 });
 
 manager.on('newOffer', offer => {
-  user.getPersonas([offer.partner], (err, personas) => {
-    if (!err) {
-      const persona = personas[offer.partner];
-      const name = persona ? persona.player_name : ('[' + offer.partner + ']');
-      console.log('Новое предложение обмена от ' + name);
+  offer.getUserDetails((err, me, them) => {
+    if (err) {
+      console.log('getUserDetails error: ' + err.message);
     } else {
-      console.log('getPersonas err: ', err);
+      console.log('Новое предложение обмена от ' + them.personaName);
+    }
+
+    // если в предложении нет моих предметов
+    // и предметы не находятся на удержании, сразу принимаем
+    if (offer.itemsToGive.length == 0 && offer.state != 11) {
+      acceptOffer(offer);
+    } else {
+      console.log('Предложение не было принято.');
+      if (offer.itemsToGive.length > 0) {
+        console.log('В предложении есть мои предметы.');
+      } else if (offer.state == 11) {
+        console.log('Предмет в предложении находится на удержании.');
+      }
     }
   });
-
-  // если в предложении нет моих предметов
-  // и предметы не находятся на удержании, сразу принимаем
-  if (offer.itemsToGive.length == 0 && offer.state != 11) {
-    acceptOffer(offer);
-  } else {
-    console.log('Предложение не было принято.');
-    if (offer.itemsToGive.length > 0) {
-      console.log('В предложении есть мои предметы.');
-    } else if (offer.state == 11) {
-      console.log('Предмет в предложении находится на удержании.');
-    }
-  }
 });
 
 //*************** Private Functions ***************************
@@ -193,11 +191,9 @@ steamManager.acceptConfirmation = (tradeOfferId) => {
 readFileWithLoginKey();
 setInterval(() => {
   if (user.steamID) {
-    user.webLogOn(err => {
-      if (err) {
-        console.log('webLogOn error: ' + err.message);
-      }
-    });
+    user.webLogOn();
+  } else {
+    readFileWithLoginKey();
   }
 }, 30 * 60 * 1000);
 

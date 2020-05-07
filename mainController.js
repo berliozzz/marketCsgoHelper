@@ -30,7 +30,8 @@ const pingPong = () => {
 const items = () => {
   marketManager.items()
     .then(res => {
-      if (res.success && res.items) {
+      if (res.success) {
+        if (!res.items) return;
         trades = res.items;
         const activeTrades = trades.filter(utils.filterActiveTrades);
         if (activeTrades.length > 0) {
