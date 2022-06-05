@@ -10,11 +10,11 @@
   "author": "Nikolay Berlioz",
   "license": "ISC",
   "dependencies": {
-    "request-promise": "^4.2.4",
-    "steam-totp": "^2.1.0",
-    "steam-tradeoffer-manager": "^2.10.0",
-    "steam-user": "^4.12.2",
-    "steamcommunity": "^3.40.0",
-    "ws": "^7.1.0"
+    "request-promise": "^4.2.6",
+    "steam-totp": "^2.1.2",
+    "steam-tradeoffer-manager": "^2.10.5",
+    "steam-user": "^4.24.3",
+    "steamcommunity": "^3.44.1",
+    "ws": "^8.7.0"
   }
 }
