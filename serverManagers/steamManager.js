@@ -6,10 +6,13 @@ const TradeOfferManager = require('steam-tradeoffer-manager');
 const request = require('request');
 const utils = require('../utils');
 const fs = require('fs');
+const optionsForSteamUser = {};
 
 const proxyUrl = utils.getProxyUrl();
+if (!utils.isEmpty(proxyUrl)) optionsForSteamUser.httpProxy = proxyUrl;
+optionsForSteamUser.autoRelogin = false;
 
-const user = new SteamUser({httpProxy: proxyUrl, autoRelogin: false});
+const user = new SteamUser(optionsForSteamUser);
 const community = new SteamCommunity({ request: request.defaults({ proxy: proxyUrl }) });
 const manager = new TradeOfferManager({
 	steam: user,
