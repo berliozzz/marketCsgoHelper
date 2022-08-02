@@ -69,6 +69,48 @@ const tradeRequest = () => {
     });
 }
 
+const itemsDota = () => {
+  marketManager.itemsDota()
+    .then(res => {
+      if (res.success) {
+        if (!res.items) return;
+        trades = res.items;
+        const activeTrades = trades.filter(utils.filterActiveTrades);
+        if (activeTrades.length > 0) {
+          tradeRequestDota();
+        }
+      } else {
+        console.log('items response error: ' + res.error);
+      }
+    })
+    .catch(err => {
+      errorLog('itemsDota', err);
+    });
+}
+
+const tradeRequestDota = () => {
+  marketManager.tradeRequestDota() 
+    .then(res => {
+      if (res.success) {
+        itemRequestErrCount = 0;
+        sendItem(res.offer);
+      } else {
+        console.log('tradeRequest err:' + res.error);
+        if (itemRequestErrCount != 3) {
+          console.log('Пробую еще раз...');
+          tradeRequest();
+          itemRequestErrCount++;
+        } else {
+          itemRequestErrCount = 0;
+          console.log('Не удалось передать предмет.');
+        }
+      }
+    })
+    .catch(err => {
+      errorLog('tradeRequestDota', err);
+    });
+}
+
 //*********** Steam Server Manager ****************
 const sendItem = (params) => {
   steamManager.sendItem(params)
@@ -115,5 +157,8 @@ pingPong();
 
 /***************** Start timers **********************/
 pingPongTimer = setInterval(() => { pingPong() }, 120 * 1000);
-itemsTimer = setInterval(() => { items() }, 30 * 1000);
+itemsTimer = setInterval(() => {
+  items();
+  setTimeout(() => { itemsDota() }, 5 * 1000); 
+}, 30 * 1000);
 

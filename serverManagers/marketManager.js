@@ -9,6 +9,13 @@ const rp = require('request-promise').defaults({
   proxy:proxyUrl
 });
 
+const rpDota = require('request-promise').defaults({
+  baseUrl: 'https://market.dota2.net/api/v2/',
+  qs: {key: config.market.marketApiKey},
+  json: true,
+  proxy:proxyUrl
+});
+
 const pingPong = () => {
   return new Promise ((resolve, reject) => {
     rp('ping')
@@ -33,6 +40,18 @@ const items = () => {
   });
 }
 
+const itemsDota = () => {
+  return new Promise ((resolve, reject) => {
+    rpDota('items')
+      .then(res => {
+        resolve(res);
+      })
+      .catch(err => {
+        reject(err);
+      });
+  });
+}
+
 const tradeRequest = () => {
   return new Promise ((resolve, reject) => {
     rp('trade-request-give-p2p')
@@ -45,8 +64,22 @@ const tradeRequest = () => {
   });
 }
 
+const tradeRequestDota = () => {
+  return new Promise ((resolve, reject) => {
+    rpDota('trade-request-give-p2p')
+      .then(res => {
+        resolve(res);
+      })
+      .catch(err => {
+        reject(err);
+      });
+  });
+}
+
 module.exports = {
   pingPong:       pingPong,
   items:          items,
-  tradeRequest:   tradeRequest
+  tradeRequest:   tradeRequest,
+  itemsDota: itemsDota,
+  tradeRequestDota: tradeRequestDota
 }
