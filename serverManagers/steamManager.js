@@ -77,19 +77,20 @@ manager.on('newOffer', offer => {
   offer.getUserDetails((err, me, them) => {
     if (err) {
       console.log('getUserDetails error: ' + err.message);
+      console.log('Новое предложение обмена от ...');
     } else {
       console.log('Новое предложение обмена от ' + them.personaName);
     }
 
     // если в предложении нет моих предметов
     // и предметы не находятся на удержании, сразу принимаем
-    if (offer.itemsToGive.length == 0 && offer.state != 11) {
+    if (offer.itemsToGive.length == 0 && them.escrowDays == 0) {
       acceptOffer(offer);
     } else {
       console.log('Предложение не было принято.');
       if (offer.itemsToGive.length > 0) {
         console.log('В предложении есть мои предметы.');
-      } else if (offer.state == 11) {
+      } else if (them.escrowDays != 0) {
         console.log('Предмет в предложении находится на удержании.');
       }
     }
