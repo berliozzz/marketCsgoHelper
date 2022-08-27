@@ -17,7 +17,9 @@ const community = new SteamCommunity({ request: request.defaults({ proxy: proxyU
 const manager = new TradeOfferManager({
 	steam: user,
 	community: community,
-	language: 'en'
+	language: 'en',
+  cancelTime: 10 * 60 * 1000,
+  pendingCancelTime: 1 * 60 * 1000
 });
 
 class SteamManager {};
@@ -92,6 +94,14 @@ manager.on('newOffer', offer => {
       }
     }
   });
+});
+
+manager.on('sentOfferCanceled', offer => {
+  console.log('Обмен отменен, так как не был принят течение 10 минут.');
+});
+
+manager.on('sentPendingOfferCanceled', offer => {
+  console.log('Обмен отменен, так как не был подтверждён.');
 });
 
 //*************** Private Functions ***************************
