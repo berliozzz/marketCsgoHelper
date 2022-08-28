@@ -75,22 +75,25 @@ community.on('sessionExpired', err => {
 
 manager.on('newOffer', offer => {
   offer.getUserDetails((err, me, them) => {
+    let partner = {};
     if (err) {
       console.log('getUserDetails error: ' + err.message);
-      console.log('Новое предложение обмена от ...');
+      partner.escrowDays = 0;
+      partner.personaName = 'Unknown';
     } else {
-      console.log('Новое предложение обмена от ' + them.personaName);
+      partner = them;
     }
+    console.log('Новое предложение обмена от ' + partner.personaName);
 
     // если в предложении нет моих предметов
     // и предметы не находятся на удержании, сразу принимаем
-    if (offer.itemsToGive.length == 0 && them.escrowDays == 0) {
+    if (offer.itemsToGive.length == 0 && partner.escrowDays == 0) {
       acceptOffer(offer);
     } else {
       console.log('Предложение не было принято.');
       if (offer.itemsToGive.length > 0) {
         console.log('В предложении есть мои предметы.');
-      } else if (them.escrowDays != 0) {
+      } else if (partner.escrowDays != 0) {
         console.log('Предмет в предложении находится на удержании.');
       }
     }
