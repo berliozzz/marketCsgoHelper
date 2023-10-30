@@ -13,7 +13,7 @@
     "request-promise": "^4.2.6",
     "steam-totp": "^2.1.2",
     "steam-tradeoffer-manager": "^2.10.5",
-    "steam-user": "^4.24.3",
+    "steam-user": "^4.29.2",
     "steamcommunity": "^3.45.1",
     "ws": "^8.7.0"
   }
