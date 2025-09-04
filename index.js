@@ -134,7 +134,7 @@ const acceptConfirmation = (confirmationid, params) => {
       }
     })
 }
-steamManager.on('webSession', accountInfo => {
+steamManager.on('webSession', () => {
   items()
 })
 steamManager.on('accessToken', token => {
