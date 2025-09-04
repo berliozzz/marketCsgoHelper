@@ -58,3 +58,19 @@ export const tradeRequest = () => {
       })
   })
 }
+export const tradeReady = offerId => {
+  const options = {
+    method: 'GET',
+    url: 'trade-ready',
+    params: {tradeoffer: offerId}
+  }
+  return new Promise((resolve, reject) => {
+    marketApiInstance(options)
+      .then(response => {
+        resolve(response)
+      })
+      .catch(error => {
+        reject(error)
+      })
+  })
+}

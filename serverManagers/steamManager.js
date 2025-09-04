@@ -76,6 +76,7 @@ user.on('webSession', (sid, cookies) => {
   }
 	manager.setCookies(cookies)
   community.setCookies(cookies)
+  steamManager.emit('webSession', { })
 })
 user.on('error', err => {
   if (!isWebSessionFired) {
