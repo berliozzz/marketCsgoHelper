@@ -1,9 +1,7 @@
-const steamManager = require('./serverManagers/steamManager');
-const marketManager = require('./serverManagers/marketManager');
-const errorLog = require('./errorLog/errorMarketAPI');
-const utils = require('./utils');
-const config = require('./config');
-const WebSocket = require('ws');
+const steamManager = require('./serverManagers/steamManager')
+const marketManager = require('./serverManagers/marketManager')
+const errorLog = require('./errorLog/errorMarketAPI')
+const utils = require('./utils')
 
 /******************** Variables *******************/
 let trades = []; 

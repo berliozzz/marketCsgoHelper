@@ -1,217 +1,184 @@
-const config = require('../config');
-const SteamUser = require('steam-user');
-const SteamTotp = require('steam-totp');
-const SteamCommunity = require('steamcommunity');
-const TradeOfferManager = require('steam-tradeoffer-manager');
-const request = require('request');
-const utils = require('../utils');
-const fs = require('fs');
-const optionsForSteamUser = {};
+import SteamUser from 'steam-user'
+import {LoginSession, EAuthTokenPlatformType} from 'steam-session'
+import {getAuthCode} from 'steam-totp'
+import SteamCommunity from 'steamcommunity'
+import TradeOfferManager from 'steam-tradeoffer-manager'
+import request from 'request'
+import EventEmitter from 'events'
+import {steam} from '../config.js'
+import {isEmpty,getProxyUrl} from '../utils.js'
 
-const proxyUrl = utils.getProxyUrl();
-if (!utils.isEmpty(proxyUrl)) optionsForSteamUser.httpProxy = proxyUrl;
-optionsForSteamUser.autoRelogin = false;
+class SteamManager extends EventEmitter {}
+let steamManager = new SteamManager
 
-const user = new SteamUser(optionsForSteamUser);
-const community = new SteamCommunity({ request: request.defaults({ proxy: proxyUrl }) });
+const SEC = 1000
+const proxyUrl = getProxyUrl()
+const userOptions = {autoRelogin: false, renewRefreshTokens: true}
+if (!isEmpty(proxyUrl)) userOptions.httpProxy = proxyUrl
+
+const user = new SteamUser(userOptions)
+const community = new SteamCommunity({request: request.defaults({proxy: proxyUrl})})
 const manager = new TradeOfferManager({
 	steam: user,
 	community: community,
 	language: 'en',
-  cancelTime: 10 * 60 * 1000,
-  pendingCancelTime: 1 * 60 * 1000
-});
+  cancelTime: 10 * 60 * SEC,
+  pendingCancelTime: 1 * 60 * SEC,
+  useAccessToken: true 
+})
 
-class SteamManager {};
-const steamManager = new SteamManager;
-
-let acceptOfferErrCount = 0;
-let loginKey = '';
-
-//********************** Events ****************************
-user.on('loggedOn', () => console.log('Logged into Steam'));
-
-user.on('webSession', (sessionID, cookies) => {
-	manager.setCookies(cookies);
-  community.setCookies(cookies);
-  console.log('webSession refreshed');
-});
-
-user.on('disconnected', (eresult, msg) => {
-  console.log(`disconnected message: ${msg}`);
-});
-
-user.on('error', err => {
-  console.log('Steam error: ' + err);
-});
-
-user.on('loginKey', key => {
-  writeFileWithLoginKey(key)
-    .then(res => console.log(res))
-    .catch(err => console.log(err));
-});
-
-community.on('sessionExpired', err => {
-  console.log(`SessionExpired emitted. Reason: ${err}`);
-  try {
-    if (!user.steamID) {
-      writeFileWithLoginKey('')
-        .then(res => {
-          console.log('Steam token cleared.');
-          readFileWithLoginKey();
-        })
-        .catch(err => console.log(err));
-    } else {
-      user.webLogOn(err => {
-        if (err) {
-          console.log('webLogOn error: ' + err.message);
-        }
-      });
-    }
-  } catch (error) {
-    console.log('Relogin error: ' + error);
-  }
-});
-
-manager.on('newOffer', offer => {
-  offer.getUserDetails((err, me, them) => {
-    let partner = {};
-    if (err) {
-      console.log('getUserDetails error: ' + err.message);
-      partner.escrowDays = 0;
-      partner.personaName = 'Unknown';
-    } else {
-      partner = them;
-    }
-    console.log('Новое предложение обмена от ' + partner.personaName);
-
-    // если в предложении нет моих предметов
-    // и предметы не находятся на удержании, сразу принимаем
-    if (offer.itemsToGive.length == 0 && partner.escrowDays == 0) {
-      acceptOffer(offer);
-    } else {
-      console.log('Предложение не было принято.');
-      if (offer.itemsToGive.length > 0) {
-        console.log('В предложении есть мои предметы.');
-      } else if (partner.escrowDays != 0) {
-        console.log('Предмет в предложении находится на удержании.');
-      }
-    }
-  });
-});
-
-manager.on('sentOfferCanceled', offer => {
-  console.log('Обмен отменен, так как не был принят течение 10 минут.');
-});
-
-manager.on('sentPendingOfferCanceled', offer => {
-  console.log('Обмен отменен, так как не был подтверждён.');
-});
-
-//*************** Private Functions ***************************
-const acceptOffer = (offer) => {
-  offer.accept((err, status) => {
-    if (err) {
-      console.log('accept offer: ' + err.message);
-      if (acceptOfferErrCount < 3) {
-        console.log('Пробую еще раз...');
-        acceptOfferErrCount++;
-        setTimeout(() => { acceptOffer(offer) }, 10 * 1000);
-      } else {
-        acceptOfferErrCount = 0;
-        console.log('Не получилось принять предмет.');
-      }
-    } else {
-      acceptOfferErrCount = 0;
-      if (status == 'accepted') {
-        console.log('Предложение успешно принято.');
-      } else {
-        console.log(status);
-      }
-    }
-  });
-}
-
-const createLogOnOptions = () => {
-  if (utils.isEmpty(loginKey)) {
-    return {
-      accountName:      config.steam.accountName,
-      password:         config.steam.password,
-      twoFactorCode:    SteamTotp.getAuthCode(config.steam.sharedSecret),
-      rememberPassword: true
-    }
-  } else {
-    return {
-      accountName:      config.steam.accountName,
-      loginKey:         loginKey, 
-      rememberPassword: true
-    }
-  }
-};
-
-const readFileWithLoginKey = () => {
-  fs.readFile('token.json', 'utf8', (err, data) => {
-    if (err) {
-      console.log('readFile error: ' + err);
-    } else {
-      loginKey = data;
-    }
-    user.logOn(createLogOnOptions());
-  });
-}
-
-const writeFileWithLoginKey = (key) => {
-  return new Promise ((resolve, reject) => {
-    fs.writeFile('token.json', key, 'utf8', (err) => {
-      if (!err) {
-          resolve('Successful write to token.json.');
-      } else {
-          reject('writeFile token.json error: ' + err);
-      }
-    });
-  });
-}
+let acceptOfferErrCount = 0
+let isWebSessionFired = false
+let refreshToken = ''
 
 //*************** SteamManager Methods *********************
-steamManager.sendItem = (parameters) => {
-  const message = parameters.tradeoffermessage;
-  const items = parameters.items;
-  const tradeLink = `https://steamcommunity.com/tradeoffer/new/?partner=${parameters.partner}&token=${parameters.token}`;
+steamManager.sendItem = parameters => {
+  const message = parameters.tradeoffermessage
+  const items = parameters.items
+  const tradeLink = `https://steamcommunity.com/tradeoffer/new/?partner=${parameters.partner}&token=${parameters.token}`
 
-  let tradeOffer = manager.createOffer(tradeLink);
-  tradeOffer.addMyItems(items);
-  tradeOffer.setMessage(message);
-
+  let tradeOffer = manager.createOffer(tradeLink)
+  tradeOffer.addMyItems(items)
+  tradeOffer.setMessage(message)
+  
   return new Promise ((resolve, reject) => {
     tradeOffer.send((err, status) => {
       if (err) {
-        reject(err);
+        reject(err)
       } else {
-        resolve({status: status, id: tradeOffer.id});
+        resolve({status: status, id: tradeOffer.id})
       }
-    });
-  });
+    })
+  })
 }
-
-steamManager.acceptConfirmation = (tradeOfferId) => {
+steamManager.acceptConfirmation = tradeOfferId => {
   return new Promise ((resolve, reject) => {
-    community.acceptConfirmationForObject(config.steam.identitySecret, tradeOfferId, (err) => {
+    community.acceptConfirmationForObject(steam.identitySecret, tradeOfferId, err => {
       if (err) {
-        reject(err);
+        reject(err)
       } else {
-        resolve('Обмен успешно подтвержден.');
+        resolve('Обмен успешно подтвержден.')
       }
-    });
-  });
+    })
+  })
 }
 
-readFileWithLoginKey();
+//********************** Events ****************************
+user.on('loggedOn', () => {
+  if (!isWebSessionFired) {
+    console.log('logged on')
+  }
+})
+user.on('webSession', (sid, cookies) => {
+  if (!isWebSessionFired) {
+    console.log('webSession event.')
+    isWebSessionFired = true
+  }
+	manager.setCookies(cookies)
+  community.setCookies(cookies)
+})
+user.on('error', err => {
+  if (!isWebSessionFired) {
+    console.log('node user: ' + err.message)
+  }
+})
+user.on('disconnected', (eresult, msg) => {
+  console.log(`disconnected message: ${msg}`)
+})
+user.on('refreshToken', refreshToken => {
+  console.log('Got new refresh token: ' + refreshToken)
+  steamManager.emit('accessToken', {
+    accessToken: session.accessToken
+  })
+})
+community.on('sessionExpired', err => {
+  console.log(`SessionExpired emitted. Reason: ${err}`)
+})
+manager.on('newOffer', offer => {
+  offer.getUserDetails((err, me, them) => {
+    let partner = {}
+    if (err) {
+      console.log('getUserDetails error: ' + err.message)
+      partner.escrowDays = 0
+      partner.personaName = 'Unknown user'
+      partner.contexts = {
+        '730': {
+          asset_count: 3 
+        }
+      }
+    } else {
+      partner = them
+    }
+    console.log('Новое предложение обмена от ' + partner.personaName)
+
+    if (offer.itemsToGive.length > 0) {
+      console.log('В предложении есть мои предметы. Предложение не было принято.')
+      return
+    }
+    if (partner.escrowDays != 0) {
+      console.log(`У этого пользователя предметы на удержании ${partner.escrowDays} дня. Предложение не было принято.`)
+      return
+    }
+    acceptOffer(offer)
+  })
+})
+manager.on('sentOfferCanceled', () => {
+  console.log('Обмен отменен, так как не был принят течение 10 минут.')
+})
+manager.on('sentPendingOfferCanceled', () => {
+  console.log('Обмен отменен, так как не был подтверждён.')
+})
+
+//*************** Help Functions ***************************
+const acceptOffer = offer => {
+  offer.accept((err, status) => {
+    if (err) {
+      console.log('accept offer: ' + err.message)
+      if (acceptOfferErrCount < 3) {
+        console.log('Пробую еще раз...')
+        if (!(~err.message.indexOf('(28)'))) {
+          acceptOfferErrCount++
+        }
+        setTimeout(() => { acceptOffer(offer) }, 2 * SEC)
+      } else {
+        acceptOfferErrCount = 0
+        console.log('Не получилось принять предмет.')
+      }
+    } else {
+      acceptOfferErrCount = 0
+      if (status == 'accepted') {
+        console.log('Предложение успешно принято.')
+        steamManager.emit('acceptedOffer')
+      } else {
+        console.log(`Предложение принято со статусом: ${status}`)
+      }
+    }
+  })
+}
+
+/************** steam-session ******************/
+let session = new LoginSession(EAuthTokenPlatformType.SteamClient, {httpProxy: proxyUrl}) 
+session.startWithCredentials({
+	accountName: steam.accountName,
+	password: steam.password,
+	steamGuardCode: getAuthCode(steam.sharedSecret)
+})
+session.on('authenticated', () => {
+  console.log('authenticated')
+  refreshToken = session.refreshToken
+  user.logOn({ refreshToken })
+  steamManager.emit('accessToken', {
+    accessToken: session.accessToken
+  })
+})
+
+//************* Start steam manager *********************
 setInterval(() => {
   if (user.steamID) {
-    user.webLogOn();
+    user.webLogOn()
   } else {
-    readFileWithLoginKey();
+    user.logOn({ refreshToken })
   }
-}, 30 * 60 * 1000);
+}, 60 * 60 * SEC)
 
-module.exports = steamManager;
+export {steamManager as default}
