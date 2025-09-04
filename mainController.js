@@ -1,7 +1,7 @@
-const steamManager = require('./serverManagers/steamManager')
-const marketManager = require('./serverManagers/marketManager')
-const errorLog = require('./errorLog/errorMarketAPI')
-const utils = require('./utils')
+import * as serverManager from './serverManagers/marketServerManager.js'
+import steamManager from './serverManagers/steamManager.js'
+import {market} from './config.js'
+import * as utils from './utils.js'
 
 /******************** Variables *******************/
 let trades = []; 

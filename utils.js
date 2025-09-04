@@ -1,22 +1,23 @@
-const config = require('./config');
+import {proxy} from './config.js'
 
-module.exports = {
-  filterActiveTrades: (item) => {
-    return item.status == 2;
-  },
-  isEmpty: (str) => {
-    if (str.trim() == '') {
-      return true;
-    }
-    return false;
-  }, 
-  getProxyUrl() {
-    if (!this.isEmpty(config.proxy.domen) && !this.isEmpty(config.proxy.port) && !this.isEmpty(config.proxy.user) && !this.isEmpty(config.proxy.password)) {
-      return `http://${config.proxy.user}:${config.proxy.password}@${config.proxy.domen}:${config.proxy.port}`;
-    }
-    if (!this.isEmpty(config.proxy.domen) && !this.isEmpty(config.proxy.port) && this.isEmpty(config.proxy.user) && this.isEmpty(config.proxy.password)) {
-      return `http://${config.proxy.domen}:${config.proxy.port}`;
-    }
-    return '';
+export const isEmpty = string => {
+  if (string.trim() == '') {
+    return true
   }
+  return false
+}
+export const getProxyUrl = () => {
+  if (!isEmpty(proxy.domen) && !isEmpty(proxy.port) && !isEmpty(proxy.user) && !isEmpty(proxy.password)) {
+    return `http://${proxy.user}:${proxy.password}@${proxy.domen}:${proxy.port}`
+  }
+  if (!isEmpty(proxy.domen) && !isEmpty(proxy.port) && isEmpty(proxy.user) && isEmpty(proxy.password)) {
+    return `http://${proxy.domen}:${proxy.port}`
+  }
+  return ''
+}
+export const filterActiveTrades = item => {
+  if (item.status == 2 && item.left > 0) {
+    return true
+  }
+  return false
 }
