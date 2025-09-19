@@ -5,8 +5,9 @@ import SteamCommunity from 'steamcommunity'
 import TradeOfferManager from 'steam-tradeoffer-manager'
 import request from 'request'
 import EventEmitter from 'events'
-import {steam} from '../config.js'
+import {steam, __dirname} from '../config.js'
 import {isEmpty,getProxyUrl} from '../utils.js'
+import * as fs from "node:fs"
 
 class SteamManager extends EventEmitter {}
 let steamManager = new SteamManager
@@ -77,6 +78,9 @@ user.on('webSession', (sid, cookies) => {
 	manager.setCookies(cookies)
   community.setCookies(cookies)
   steamManager.emit('webSession', { })
+  steamManager.emit('accessToken', {
+    accessToken: user._loginSession.accessToken
+  })
 })
 user.on('error', err => {
   if (!isWebSessionFired) {
@@ -84,12 +88,13 @@ user.on('error', err => {
   }
 })
 user.on('disconnected', (eresult, msg) => {
-  console.log(`disconnected message: ${msg}`)
+  // console.log(`disconnected message: ${msg}`)
+  relogin()
 })
 user.on('refreshToken', refreshToken => {
   console.log('Got new refresh token: ' + refreshToken)
   steamManager.emit('accessToken', {
-    accessToken: session.accessToken
+    accessToken: user._loginSession.accessToken
   })
 })
 community.on('sessionExpired', err => {
@@ -159,27 +164,47 @@ const acceptOffer = offer => {
 
 /************** steam-session ******************/
 let session = new LoginSession(EAuthTokenPlatformType.SteamClient, {httpProxy: proxyUrl}) 
-session.startWithCredentials({
-	accountName: steam.accountName,
-	password: steam.password,
-	steamGuardCode: getAuthCode(steam.sharedSecret)
-})
+const loginSteamSession = () => {
+  session.startWithCredentials({
+    accountName: steam.accountName,
+    password: steam.password,
+    steamGuardCode: getAuthCode(steam.sharedSecret)
+  })
+}
 session.on('authenticated', () => {
   console.log('authenticated')
   refreshToken = session.refreshToken
+  fs.writeFileSync(__dirname + '/refreshToken.txt', refreshToken, err => {
+    if (err) {
+      console.log('Write refreshToken error: ' + err.message)
+    }
+  })
+  console.log('refreshToken writed to refreshToken.txt')
+
   user.logOn({ refreshToken })
   steamManager.emit('accessToken', {
     accessToken: session.accessToken
   })
 })
 
-//************* Start steam manager *********************
-setInterval(() => {
+/************** login to steam  ******************/
+try {
+  const token = fs.readFileSync(__dirname + '/refreshToken.txt', { encoding: "utf-8" })
+  refreshToken = token
+  user.logOn({ refreshToken })
+} catch (err) {
+  if (err.message.includes('no such file or directory')) {
+    loginSteamSession()
+  }
+}
+const relogin = () => {
   if (user.steamID) {
     user.webLogOn()
   } else {
     user.logOn({ refreshToken })
   }
-}, 60 * 60 * SEC)
+}
+
+setInterval(() => { relogin() }, 60 * 60 * SEC)
 
 export {steamManager as default}

@@ -16,3 +16,4 @@ export const proxy = {
   user: '',
   password: ''
 }
+export const __dirname = import.meta.dirname
